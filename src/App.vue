@@ -10,7 +10,7 @@
       <p class="mb-24 text-white">Pour suivre vos listes favorites</p>
 
       <div id="voteSection" class="w-full flex justify-center">
-        <div class="max-w-6xl w-full md:mx-32 md:grid md:grid-cols-3 md:gap-4">
+        <div class="select-none max-w-6xl w-full md:mx-32 md:grid md:grid-cols-3 md:gap-4">
           <div class="py-2 md:px-2 skew-y-3" v-for="(item, index) in list" :key="index">
             <div class="flex items-center md:block p-4 md:p-8 rounded-xl drop-shadow-2xl" :style="'color: '+ item.colorText +'; background-color: ' + item.color">
               <div class="aspect-square cursor-pointer w-32 md:w-full rounded-full mb-2" :style="'background-image: url(\'' + item.img + '\'); background-position: center; background-size: contain'"></div>
@@ -26,13 +26,14 @@
         </div>
       </div>
 
-      <div class="w-full mt-16 flex justify-center">
-        {{ barHeightList }}
+      <div class="w-full mt-8 flex justify-center text-white">
         <div class="max-w-6xl w-full md:mx-32 grid grid-cols-3 md:gap-4">
-          <div class="py-2 md:px-2" v-for="(item, index) in list" :key="index">
-            <div class="p-4 md:p-8 rounded-xl drop-shadow-2xl" :style="'color: '+ item.colorText">
-              <div style="height: 300px" class="flex">toto</div>
-              <h4>{{ item.title }}</h4>
+          <div class="py-2 md:px-2" v-for="(item, index) in listList" :key="index">
+            <div class="p-4 md:p-8 rounded-xl drop-shadow-2xl">
+              <div style="height: 300px" class="flex justify-center items-end">
+                <div class="shadow-xl w-8 rounded-xl" :style="'background-color: '+ item.color  +'; height:' + barHeight[item.id].height + 'px'"></div>
+              </div>
+              <h4 class="md:text-2xl shadow-xl font-bold mt-2">{{ barHeight[item.id].title }}</h4>
             </div>
           </div>
         </div>
@@ -51,24 +52,31 @@ import 'firebase/database'
 export default {
   data() {
     return {
-      list: null,
-      barHeightList: [],
+      list: {},
+      listList: [{id: 'Malitech', color: '#b7291c'}, {id: 'Revolu', color: '#0000FF'}, {id: 'Tresor', color: '#73fc61'}]
+    }
+  },
+  computed: {
+    barHeight() {
+      let sortList = [], res = {}
+      Object.keys(this.list || {}).forEach(item => {
+        sortList.push({value: this.list[item].value, name: this.list[item].title, id: item})
+      })
+      if (sortList.length > 0) {
+        sortList = sortList.sort((a,b) => {
+          return b.value - a.value
+        })
+        let totVoies = sortList[0].value + sortList[1].value + sortList[2].value
+        for (let i = 0; i < sortList.length; i++) {
+          const it = sortList[i]
+          let val = parseInt(it.value * 300 / totVoies)
+          res[it.id] = {title: it.name, height: val}
+        }
+      }
+      return res
     }
   },
   methods: {
-    barHeight() {
-      let res = {}
-      Object.keys(this.list || {}).forEach(item => {
-        res[item].value = this.list[item].value
-        this.barHeightList.push({value: this.list[item].value, id: item})
-      })
-      if (this.barHeightList.length > 0) {
-        this.barHeightList = this.barHeightList.sort((a,b) => {
-          return b.value - a.value
-        })
-      }
-      return sortList
-    },
     scrollTo: function(n) {
       var doc = document.querySelector('#' + n);
       if (doc != null) {
@@ -92,7 +100,6 @@ export default {
   created() {
     firebase.database().ref('List').on('value', snapshot => {
       this.list = snapshot.val()
-      this.barHeight()
     })
   }
 }
